@@ -1,8 +1,5 @@
 PACKAGES = $(shell go list ./...)
 
-build:
-	@go build
-
 test:
 	@go test -v -parallel=4 $(PACKAGES)
 
@@ -15,4 +12,4 @@ vet:
 coverage:
 	@go test -v -race -cover -covermode=atomic -coverprofile=coverage.txt $(PACKAGES)
 
-.PHONY: test lint vet coverage build
+.PHONY: test lint vet coverage
