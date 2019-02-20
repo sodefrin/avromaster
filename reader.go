@@ -22,7 +22,7 @@ type reader struct {
 func NewReader(r io.Reader) (Reader, error) {
 	ocfr, err := goavro.NewOCFReader(r)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("failed to goavro.NewOCFReader : %w", err)
 	}
 	return &reader{mux: new(sync.Mutex), r: r, ocfr: ocfr}, nil
 }
@@ -31,15 +31,15 @@ func (amr *reader) ReadSingle(data interface{}) error {
 	amr.mux.Lock()
 	if !amr.ocfr.Scan() {
 		amr.mux.Unlock()
-		return xerrors.New("no rows")
+		return xerrors.New("failed to scan new rows")
 	}
 	in, err := amr.ocfr.Read()
 	amr.mux.Unlock()
 	if err != nil {
-		return err
+		return xerrors.Errorf("failed to goavro.Read : %w", err)
 	}
 	if err := mapToStruct(in, data); err != nil {
-		return err
+		return xerrors.Errorf("failed to mapToStruct : %w", err)
 	}
 	return nil
 }
@@ -50,17 +50,17 @@ func (amr *reader) ReadMulti(max int, data interface{}) error {
 		amr.mux.Lock()
 		if !amr.ocfr.Scan() {
 			amr.mux.Unlock()
-			return xerrors.New("no rows")
+			return xerrors.New("failed to scan new rows")
 		}
 		tmp, err := amr.ocfr.Read()
 		amr.mux.Unlock()
 		if err != nil {
-			return err
+			return xerrors.Errorf("failed to goavro.Read : %w", err)
 		}
 		in = append(in, tmp)
 	}
 	if err := mapToStruct(in, data); err != nil {
-		return err
+		return xerrors.Errorf("failed to mapToStruct : %w", err)
 	}
 	return nil
 }
