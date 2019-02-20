@@ -2,6 +2,7 @@ package avromaster
 
 import (
 	"io"
+	"sync"
 
 	"github.com/linkedin/goavro"
 	"golang.org/x/xerrors"
@@ -13,6 +14,7 @@ type Reader interface {
 }
 
 type reader struct {
+	mux  *sync.Mutex
 	r    io.Reader
 	ocfr *goavro.OCFReader
 }
@@ -22,20 +24,43 @@ func NewReader(r io.Reader) (Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &reader{r: r, ocfr: ocfr}, nil
+	return &reader{mux: new(sync.Mutex), r: r, ocfr: ocfr}, nil
 }
 
 func (amr *reader) ReadSingle(data interface{}) error {
+	amr.mux.Lock()
 	if !amr.ocfr.Scan() {
+		amr.mux.Unlock()
 		return xerrors.New("no rows")
 	}
-	_, err := amr.ocfr.Read()
+	in, err := amr.ocfr.Read()
+	amr.mux.Unlock()
 	if err != nil {
+		return err
+	}
+	if err := mapToStruct(in, data); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (amr *reader) ReadMulti(max int, data interface{}) error {
+	in := []interface{}{}
+	for i := 0; i < max; i++ {
+		amr.mux.Lock()
+		if !amr.ocfr.Scan() {
+			amr.mux.Unlock()
+			return xerrors.New("no rows")
+		}
+		tmp, err := amr.ocfr.Read()
+		amr.mux.Unlock()
+		if err != nil {
+			return err
+		}
+		in = append(in, tmp)
+	}
+	if err := mapToStruct(in, data); err != nil {
+		return err
+	}
 	return nil
 }

@@ -15,3 +15,15 @@ func structToMap(data interface{}) (interface{}, error) {
 
 	return ret, nil
 }
+
+func mapToStruct(inData interface{}, outData interface{}) error {
+	b, err := json.Marshal(inData)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, outData); err != nil {
+		return err
+	}
+
+	return nil
+}
