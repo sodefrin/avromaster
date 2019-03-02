@@ -1,6 +1,6 @@
 ## avromaster
 
-simple avrofile reader & writer. this repository wrap of https://github.com/linkedin/goavro
+simple avrofile reader & writer. this repository is wrap of https://github.com/linkedin/goavro
 
 ## Write & Read
 
